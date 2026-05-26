@@ -8,7 +8,8 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://campusiq.netlify.app"],
+    "https://campusiq-search.netlify.app"  // ← fixed URL
+  ],
   credentials: true
 }));
 app.use(express.json());
@@ -21,11 +22,9 @@ app.get("/", (req, res) => {
 app.get("/api/colleges", async (req, res) => {
   try {
     const colleges = await College.find();
-
     res.json(colleges);
   } catch (error) {
     console.log(error);
-
     res.status(500).json({
       message: "Server Error",
     });
@@ -46,7 +45,6 @@ app.get("/api/colleges/:id", async (req, res) => {
     res.json(college);
   } catch (error) {
     console.log(error);
-
     res.status(500).json({
       message: "Server Error",
     });
