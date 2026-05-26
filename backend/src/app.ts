@@ -6,7 +6,9 @@ import College from "./models/College";
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: [
+    "http://localhost:5173",
+    "https://campusiq.netlify.app"],
   credentials: true
 }));
 app.use(express.json());
