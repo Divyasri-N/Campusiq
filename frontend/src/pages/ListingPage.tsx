@@ -1,4 +1,4 @@
-import React, {
+import {
   useState,
   useMemo,
   useEffect,
@@ -27,9 +27,9 @@ const DEFAULT_FILTERS: CollegeFilters = {
 const PER_PAGE = 6;
 
 interface ListingPageProps {
-  onView: (id: string) => void;         // ← changed: _id is string
-  compareList: string[];                 // ← changed: _id is string
-  onToggleCompare: (id: string) => void; // ← changed: _id is string
+  onView: (id: string) => void;
+  compareList: string[];
+  onToggleCompare: (id: string) => void;
   onGoCompare: () => void;
 }
 
@@ -39,40 +39,20 @@ const ListingPage: React.FC<ListingPageProps> = ({
   onToggleCompare,
   onGoCompare,
 }) => {
-  // SEARCH
   const [search, setSearch] = useState('');
-
-  // FILTERS
-  const [filters, setFilters] =
-    useState<CollegeFilters>(DEFAULT_FILTERS);
-
-  // SORT
-  const [sort, setSort] =
-    useState<SortOption>('rating');
-
-  // PAGINATION
+  const [filters, setFilters] = useState<CollegeFilters>(DEFAULT_FILTERS);
+  const [sort, setSort] = useState<SortOption>('rating');
   const [page, setPage] = useState(1);
-
-  // COLLEGES FROM BACKEND
   const [colleges, setColleges] = useState<College[]>([]);
-
-  // LOADING
   const [loading, setLoading] = useState(true);
-
-  // ERROR
   const [error, setError] = useState('');
 
-  // FETCH COLLEGES
   useEffect(() => {
     const fetchColleges = async () => {
       try {
         setLoading(true);
-
         const response = await API.get('/colleges');
 
-        console.log('Backend Response:', response.data);
-
-        // HANDLE DIFFERENT RESPONSE TYPES
         if (Array.isArray(response.data)) {
           setColleges(response.data);
         } else if (Array.isArray(response.data.colleges)) {
@@ -94,92 +74,61 @@ const ListingPage: React.FC<ListingPageProps> = ({
     fetchColleges();
   }, []);
 
-  // FILTER UPDATE
-  const setFilter = (
-    key: keyof CollegeFilters,
-    value: string | number
-  ) => {
+  const setFilter = (key: keyof CollegeFilters, value: string | number) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
   };
 
-  // RESET FILTERS
   const handleReset = () => {
     setFilters(DEFAULT_FILTERS);
     setSearch('');
     setPage(1);
   };
 
-  // FILTER + SORT LOGIC
   const filtered = useMemo(() => {
     const query = search.toLowerCase().trim();
 
     return colleges
       .filter((college) => {
-        // SEARCH
         if (
           query &&
           !college.name.toLowerCase().includes(query) &&
           !college.city.toLowerCase().includes(query) &&
           !college.state.toLowerCase().includes(query)
-        ) {
-          return false;
-        }
+        ) return false;
 
-        // STATE FILTER
-        if (filters.state && college.state !== filters.state) {
-          return false;
-        }
-
-        // TYPE FILTER
-        if (filters.type && college.type !== filters.type) {
-          return false;
-        }
-
-        // TIER FILTER
-        if (filters.tier && college.tier !== filters.tier) {
-          return false;
-        }
-
-        // FEES FILTER
-        if (college.fees > filters.maxFees) {
-          return false;
-        }
-
-        // RATING FILTER
-        if (college.rating < filters.minRating) {
-          return false;
-        }
+        if (filters.state && college.state !== filters.state) return false;
+        if (filters.type && college.type !== filters.type) return false;
+        if (filters.tier && college.tier !== filters.tier) return false;
+        if (college.fees > filters.maxFees) return false;
+        if (college.rating < filters.minRating) return false;
 
         return true;
       })
       .sort((a, b) => {
         switch (sort) {
-          case 'rating':
-            return b.rating - a.rating;
-          case 'fees_asc':
-            return a.fees - b.fees;
-          case 'fees_desc':
-            return b.fees - a.fees;
-          case 'placement':
-            return b.placements.avg - a.placements.avg;
-          default:
-            return 0;
+          case 'rating':    return b.rating - a.rating;
+          case 'fees_asc':  return a.fees - b.fees;
+          case 'fees_desc': return b.fees - a.fees;
+          case 'placement': return b.placements.avg - a.placements.avg;
+          default:          return 0;
         }
       });
   }, [search, filters, sort, colleges]);
 
-  // PAGINATED RESULTS
   const paginated = filtered.slice(0, page * PER_PAGE);
   const hasMore = paginated.length < filtered.length;
+
+  // Helper to get stable ID — uses _id if available, falls back to string id
+  const getCollegeId = (college: College) =>
+    college._id || String(college.id);
 
   return (
     <div>
       {/* HERO SECTION */}
       <div
         style={{
-          background:
-            'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)',
           borderRadius: 20,
           padding: '36px 32px',
           marginBottom: 26,
@@ -198,17 +147,10 @@ const ListingPage: React.FC<ListingPageProps> = ({
           Find Your College
         </h1>
 
-        <p
-          style={{
-            color: '#cbd5e1',
-            marginBottom: 24,
-            fontSize: 15,
-          }}
-        >
+        <p style={{ color: '#cbd5e1', marginBottom: 24, fontSize: 15 }}>
           Search from {colleges.length} colleges across India
         </p>
 
-        {/* SEARCH INPUT */}
         <div style={{ position: 'relative' }}>
           <span
             style={{
@@ -227,10 +169,7 @@ const ListingPage: React.FC<ListingPageProps> = ({
           <input
             type="text"
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by college name, city, or state..."
             style={{
               width: '100%',
@@ -249,29 +188,17 @@ const ListingPage: React.FC<ListingPageProps> = ({
       </div>
 
       {/* MAIN CONTENT */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 22,
-          alignItems: 'flex-start',
-        }}
-      >
-        {/* FILTER SIDEBAR */}
+      <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start' }}>
         <FilterSidebar
           filters={filters}
           sort={sort}
           onFilterChange={setFilter}
-          onSortChange={(value) => {
-            setSort(value);
-            setPage(1);
-          }}
+          onSortChange={(value) => { setSort(value); setPage(1); }}
           onReset={handleReset}
           resultCount={filtered.length}
         />
 
-        {/* RIGHT CONTENT */}
         <div style={{ flex: 1 }}>
-
           {/* COMPARE BANNER */}
           {compareList.length > 0 && (
             <div
@@ -287,15 +214,8 @@ const ListingPage: React.FC<ListingPageProps> = ({
                 flexWrap: 'wrap',
               }}
             >
-              <span
-                style={{
-                  fontSize: 13,
-                  color: '#1d4ed8',
-                  fontWeight: 600,
-                }}
-              >
-                {compareList.length} college
-                {compareList.length > 1 ? 's' : ''} selected to compare
+              <span style={{ fontSize: 13, color: '#1d4ed8', fontWeight: 600 }}>
+                {compareList.length} college{compareList.length > 1 ? 's' : ''} selected to compare
               </span>
               <span style={{ flex: 1 }} />
               {compareList.length >= 2 && (
@@ -360,19 +280,17 @@ const ListingPage: React.FC<ListingPageProps> = ({
           )}
 
           {/* COLLEGE CARDS */}
-          {!loading &&
-            !error &&
-            paginated.length > 0 &&
+          {!loading && !error && paginated.length > 0 &&
             paginated.map((college) => (
               <CollegeCard
-                key={college._id}                          // ← fixed: use _id
+                key={getCollegeId(college)}
                 college={college}
-                onView={() => onView(college._id)}         // ← fixed: pass _id
-                isInCompare={compareList.includes(college._id)}  // ← fixed
-                onToggleCompare={() => onToggleCompare(college._id)} // ← fixed
+                onView={() => onView(getCollegeId(college))}
+                isInCompare={compareList.includes(getCollegeId(college))}
+                onToggleCompare={() => onToggleCompare(getCollegeId(college))}
                 compareDisabled={
                   compareList.length >= 3 &&
-                  !compareList.includes(college._id)       // ← fixed
+                  !compareList.includes(getCollegeId(college))
                 }
               />
             ))}

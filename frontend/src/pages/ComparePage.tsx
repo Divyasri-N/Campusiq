@@ -7,7 +7,9 @@ import API from '../services/api';
 import { CollegeLogo, EmptyState } from '../components/ui';
 import { formatMoney, formatFees } from '../utils/format';
 
-// ← fixed: best() returns string (_id) instead of number
+// Helper to get a stable ID from a college
+const getId = (c: College): string => c._id || String(c.id);
+
 interface CompareRow {
   label: string;
   render: (c: College) => string;
@@ -15,51 +17,55 @@ interface CompareRow {
 }
 
 const COMPARE_ROWS: CompareRow[] = [
-  { label: 'Location',      render: (c) => `${c.city}, ${c.state}` },
-  { label: 'Type',          render: (c) => c.type },
-  { label: 'Tier',          render: (c) => c.tier },
+  { label: 'Location', render: (c) => `${c.city}, ${c.state}` },
+  { label: 'Type', render: (c) => c.type },
+  { label: 'Tier', render: (c) => c.tier },
   {
     label: 'Annual Fees',
     render: (c) => formatFees(c.fees),
-    best: (cs) => cs.reduce((a, b) => (a.fees < b.fees ? a : b))._id,  // ← fixed
+    best: (cs) => getId(cs.reduce((a, b) => (a.fees < b.fees ? a : b))),
   },
   {
     label: 'Avg Package',
     render: (c) => formatMoney(c.placements.avg),
     best: (cs) =>
-      cs.reduce((a, b) => (a.placements.avg > b.placements.avg ? a : b))._id, // ← fixed
+      getId(cs.reduce((a, b) => (a.placements.avg > b.placements.avg ? a : b))),
   },
   {
     label: 'Highest Package',
     render: (c) => formatMoney(c.placements.highest),
     best: (cs) =>
-      cs.reduce((a, b) =>
-        a.placements.highest > b.placements.highest ? a : b
-      )._id, // ← fixed
+      getId(
+        cs.reduce((a, b) =>
+          a.placements.highest > b.placements.highest ? a : b
+        )
+      ),
   },
   {
     label: 'Placement Rate',
     render: (c) => `${c.placements.rate}%`,
     best: (cs) =>
-      cs.reduce((a, b) =>
-        a.placements.rate > b.placements.rate ? a : b
-      )._id, // ← fixed
+      getId(
+        cs.reduce((a, b) =>
+          a.placements.rate > b.placements.rate ? a : b
+        )
+      ),
   },
   {
     label: 'Overall Rating',
     render: (c) => `${c.rating}/5 ⭐`,
     best: (cs) =>
-      cs.reduce((a, b) => (a.rating > b.rating ? a : b))._id, // ← fixed
+      getId(cs.reduce((a, b) => (a.rating > b.rating ? a : b))),
   },
-  { label: 'Intake Exam',   render: (c) => c.intake },
-  { label: 'Cutoff Rank',   render: (c) => c.cutoff.toLocaleString() },
-  { label: 'Total Seats',   render: (c) => c.seats.toLocaleString() },
-  { label: 'Established',   render: (c) => String(c.estd) },
+  { label: 'Intake Exam', render: (c) => c.intake },
+  { label: 'Cutoff Rank', render: (c) => c.cutoff.toLocaleString() },
+  { label: 'Total Seats', render: (c) => c.seats.toLocaleString() },
+  { label: 'Established', render: (c) => String(c.estd) },
   { label: 'Accreditation', render: (c) => c.accreditation },
 ];
 
 interface ComparePageProps {
-  compareList: string[];  // ← fixed: string[] instead of number[]
+  compareList: string[];
 }
 
 const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
@@ -68,20 +74,22 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // FETCH ALL COLLEGES THEN FILTER BY compareList
   useEffect(() => {
     const fetchColleges = async () => {
       try {
         setLoading(true);
+
         const response = await API.get('/colleges');
+
         const allColleges: College[] = Array.isArray(response.data)
           ? response.data
           : response.data.colleges ?? [];
 
-        // Filter only the ones in compareList using _id
+        // ✅ FIXED: use getId() so both _id and numeric id work
         const selected = allColleges.filter((c) =>
-          compareList.includes(c._id)
+          compareList.includes(getId(c))
         );
+
         setColleges(selected);
       } catch (err) {
         console.error('Failed to fetch colleges for compare:', err);
@@ -108,7 +116,6 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
     fontFamily: 'inherit',
   };
 
-  // LOADING STATE
   if (loading) {
     return (
       <div
@@ -125,22 +132,10 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
     );
   }
 
-  // EMPTY STATE — less than 2 colleges selected
   if (colleges.length < 2) {
     return (
       <div>
-        <button
-          onClick={() => navigate('/')}
-          style={backButtonStyle}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
-            e.currentTarget.style.boxShadow = '0 12px 28px rgba(37,99,235,0.4)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = 'translateY(0px) scale(1)';
-            e.currentTarget.style.boxShadow = '0 8px 20px rgba(37,99,235,0.25)';
-          }}
-        >
+        <button onClick={() => navigate('/')} style={backButtonStyle}>
           ← Back
         </button>
 
@@ -158,18 +153,7 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px' }}>
       {/* BACK BUTTON */}
-      <button
-        onClick={() => navigate('/')}
-        style={backButtonStyle}
-        onMouseOver={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
-          e.currentTarget.style.boxShadow = '0 12px 28px rgba(37,99,235,0.4)';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.transform = 'translateY(0px) scale(1)';
-          e.currentTarget.style.boxShadow = '0 8px 20px rgba(37,99,235,0.25)';
-        }}
-      >
+      <button onClick={() => navigate('/')} style={backButtonStyle}>
         ← Back
       </button>
 
@@ -184,14 +168,7 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
           gap: 12,
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 700,
-            color: '#111827',
-          }}
-        >
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#111827' }}>
           College Comparison
         </h1>
 
@@ -205,23 +182,13 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
             color: '#2563eb',
             fontWeight: 700,
             cursor: 'pointer',
-            transition: 'all 0.25s ease',
-            fontFamily: 'inherit',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = '#eff6ff';
-            e.currentTarget.style.transform = 'scale(1.03)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = '#fff';
-            e.currentTarget.style.transform = 'scale(1)';
           }}
         >
           + Add More Colleges
         </button>
       </div>
 
-      {/* COMPARISON TABLE */}
+      {/* TABLE */}
       <div
         style={{
           overflowX: 'auto',
@@ -244,10 +211,6 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
                   padding: '16px',
                   textAlign: 'left',
                   borderBottom: '1px solid #e5e7eb',
-                  fontSize: 13,
-                  color: '#6b7280',
-                  fontWeight: 700,
-                  letterSpacing: 0.4,
                 }}
               >
                 PARAMETER
@@ -255,11 +218,8 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
 
               {colleges.map((college) => (
                 <th
-                  key={college._id}  // ← fixed: use _id
-                  style={{
-                    padding: '16px',
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
+                  key={getId(college)}
+                  style={{ padding: '16px', borderBottom: '1px solid #e5e7eb' }}
                 >
                   <div
                     style={{
@@ -270,13 +230,10 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
                     }}
                   >
                     <CollegeLogo college={college} size={36} />
+
                     <div>
                       <div
-                        style={{
-                          fontWeight: 700,
-                          fontSize: 14,
-                          color: '#111827',
-                        }}
+                        style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}
                       >
                         {college.name}
                       </div>
@@ -304,19 +261,18 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
                       padding: '14px 16px',
                       fontWeight: 700,
                       borderBottom: '1px solid #f3f4f6',
-                      fontSize: 13,
-                      color: '#374151',
                     }}
                   >
                     {row.label}
                   </td>
 
                   {colleges.map((college) => {
-                    const isBest = bestId === college._id;  // ← fixed: use _id
+                    // ✅ FIXED: compare using getId()
+                    const isBest = bestId !== null && bestId === getId(college);
 
                     return (
                       <td
-                        key={college._id}  // ← fixed: use _id
+                        key={getId(college)}
                         style={{
                           padding: '14px 16px',
                           textAlign: 'center',
@@ -324,7 +280,6 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
                           background: isBest ? '#ecfdf5' : 'transparent',
                           color: isBest ? '#047857' : '#374151',
                           fontWeight: isBest ? 700 : 500,
-                          fontSize: 14,
                         }}
                       >
                         {isBest && (
@@ -355,8 +310,8 @@ const ComparePage: React.FC<ComparePageProps> = ({ compareList }) => {
           color: '#92400e',
         }}
       >
-        <strong>✓ Legend:</strong> Green highlighted cells indicate the
-        best value for that parameter across selected colleges.
+        <strong>✓ Legend:</strong> Green highlighted cells indicate the best
+        value for that parameter across selected colleges.
       </div>
     </div>
   );

@@ -45,7 +45,7 @@ export type SortOption =
   | 'placement';
 
 export interface College {
-  _id: string;       // ← ADDED — MongoDB's actual document ID
+  _id?: string;       // ← ADDED — MongoDB's actual document ID
   id: number;        // your custom numeric id
   name: string;
   city: string;

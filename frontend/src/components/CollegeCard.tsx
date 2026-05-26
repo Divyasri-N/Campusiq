@@ -52,7 +52,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
             }}
           >
             <h2
-              onClick={() => onView(college._id)}  // ← fixed: _id
+              onClick={() => onView(college._id || String(college.id))}  // ← fixed: _id
               style={{
                 margin: 0,
                 fontSize: 16,
@@ -150,7 +150,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
           }}
         >
           <button
-            onClick={() => onView(college._id)}  // ← fixed: _id
+            onClick={() => onView(college._id || String(college.id))}  // ← fixed: _id
             style={{
               padding: '8px 16px',
               borderRadius: 8,
@@ -167,7 +167,7 @@ const CollegeCard: React.FC<CollegeCardProps> = ({
           </button>
 
           <button
-            onClick={() => onToggleCompare(college._id)}  // ← fixed: _id
+            onClick={() => onToggleCompare(college._id || String(college.id))}  // ← fixed: _id
             disabled={!isInCompare && compareDisabled}
             style={{
               padding: '8px 16px',
